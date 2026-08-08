@@ -29,12 +29,20 @@ npm run verify
 That is `tsc --noEmit` plus the Vitest suite: golden fixtures, ramp properties
 P1–P8, the streak state machine, and one describe block per invariant.
 
-The data spine is tested separately, against a real Postgres, because RLS is
-the thing under test and it cannot be exercised from TypeScript:
+`npm run verify` includes the data-spine suite, which runs against a **real
+PostgreSQL** — RLS is the thing under test, and it cannot be exercised from
+TypeScript. It needs no Docker and no setup: `embedded-postgres` supplies a
+genuine binary. A simulated RLS test would be worse than none, because it would
+report green on enforcement that does not exist.
 
 ```bash
-./scripts/db-test.sh
+npm run test:db
 ```
+
+19 assertions, including the two that matter most: that an application-layer
+bypass of RLS returns nothing, and that the outbound role can read only rows
+carrying a live, unrevoked egress grant. `./scripts/db-test.sh` is the
+equivalent Docker path for CI.
 
 ## Layout
 

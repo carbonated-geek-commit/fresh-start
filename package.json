@@ -14,7 +14,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "verify": "npm run typecheck && npm run test"
+    "verify": "npm run typecheck && npm run test && npm run test:db",
+    "test:db": "node scripts/db-test.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.116.0",
@@ -26,10 +27,12 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@embedded-postgres/windows-x64": "^18.4.0-beta.17",
     "@tailwindcss/postcss": "^4.0.0",
     "@types/node": "^22.10.5",
     "@types/react": "^19.0.7",
     "@types/react-dom": "^19.0.3",
+    "embedded-postgres": "^18.4.0-beta.17",
     "fast-check": "^3.23.2",
     "postcss": "^8.4.49",
     "tailwindcss": "^4.0.0",

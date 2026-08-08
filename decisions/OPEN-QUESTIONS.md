@@ -87,21 +87,18 @@ Pinned by tests in `tests/streak.test.ts`.
 **Status:** OPEN — not blocking, and no code change is warranted without a
 decision. Deepening the floor is an economics change (thesis-level).
 
-### Q17 — The SQL data-spine suite has still never been executed
-`db/tests/rls.test.sql` proves the T01 and T03 criteria that TypeScript cannot
-reach: that an application-layer bypass of RLS returns nothing, that the
-outbound role reads only rows with a live egress grant, that a company
-destination is rejected, and that `window_days` is immutable.
+### Q17 — The SQL data-spine suite  **RESOLVED 2026-08-07**
+`db/tests/rls.test.sql` now runs green: **19 assertions against real
+PostgreSQL 18.4**, including the two that could never be checked from
+TypeScript — that an application-layer bypass of RLS returns nothing, and that
+the outbound role can read only rows carrying a live, unrevoked egress grant.
 
-Docker Desktop is installed on the build machine but its daemon would not come
-up (`docker info` hangs; no containers ever became reachable), so the suite has
-been written and reviewed but never run. This is an environment blocker, not a
-code one.
+Docker Desktop would not start on the build machine (processes up, WSL backend
+stopped), so `scripts/db-test.mjs` was added as a Docker-free path: it runs a
+genuine embedded PostgreSQL binary rather than simulating one. A simulated RLS
+test would be worse than none — it would report green on enforcement that does
+not exist. `scripts/db-test.sh` remains the Docker path for CI.
 
-Run it with `./scripts/db-test.sh` once Docker is healthy, or point `psql` at
-any Postgres 16 and apply `db/migrations/**` then `db/policies/**` then the
-test file.
+Run with `npm run test:db`.
 
-**Status:** OPEN — the only acceptance criteria in the whole build that are
-claimed but unverified. Treat every RLS assertion as unproven until this runs.
-
+**Status:** ANSWERED.

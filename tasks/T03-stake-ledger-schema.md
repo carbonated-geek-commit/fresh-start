@@ -35,3 +35,4 @@ one for testing convenience.
 
 _Append-only. One line per claim, hand-off, and completion._
 - 2026-08-07 builder: complete. bigint minor units throughout; destination enum is {user,charity}; window_days immutable by trigger; five-habit ceiling in the DB.
+- 2026-08-07 builder: VERIFIED. Company-destination rejection, integer-only value columns, and window_days immutability all proven by the SQL suite.

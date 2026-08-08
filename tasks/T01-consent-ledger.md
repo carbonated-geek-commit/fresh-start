@@ -37,3 +37,4 @@ rule, escalate rather than moving it to app code.
 
 _Append-only. One line per claim, hand-off, and completion._
 - 2026-08-07 builder: complete. Ledger types, attach_ledger, RLS policies, egress gate. SQL suite written at db/tests/rls.test.sql — NOT YET EXECUTED (no local Postgres; run ./scripts/db-test.sh).
+- 2026-08-07 builder: VERIFIED. db/tests/rls.test.sql runs green — 19 assertions against real PostgreSQL 18.4 via `npm run test:db`. The app-layer-bypass and egress-gate criteria are now proven, not claimed.
