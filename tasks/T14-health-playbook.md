@@ -36,3 +36,4 @@ escalate.
 
 _Append-only. One line per claim, hand-off, and completion._
 - 2026-08-07 builder: complete, PENDING SIGN-OFF. Playbook content is the fleet's proposal against SPEC 08 s8.4; open question Q13 is still OPEN and this content is what it blocks.
+- 2026-08-08 human: SIGNED OFF. Q13 answered — the shipped playbook content is promoted, not a proposal. Task fully closed.

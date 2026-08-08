@@ -84,6 +84,17 @@ boundary and rejects `x_large`. The deterministic classifier — not the LLM —
 has the last word on `size_class`, and it may only ever demote toward
 `x_large`, never promote out of it. Errors fall on the side of not staking.
 
+**The push tickle carries nothing.** The two daily nudges reach a closed app
+via web push, but the payload is empty: the service worker wakes, fetches the
+cue with the user's own session, and builds the notification on the device.
+Web push payloads are encrypted end to end, so carrying the habit label would
+not technically leak it — the reason not to is that the push endpoint is a
+third party on an outbound path, and N9 is about whether such a path carries
+behavioural data at all. The dispatcher runs cross-user under its own database
+role (`freshstart_nudger`) that can read a push endpoint, a timezone, and two
+cue times, and nothing else. Set `VAPID_*` to enable; leave unset for in-app
+cues only.
+
 **RLS is the consent ledger's enforcement.** The Supabase store performs no
 ownership checks on purpose; SPEC 06 §6.1 says application-layer checks do not
 satisfy the spec, and a TypeScript copy of the rule is a second, weaker one.
@@ -99,7 +110,8 @@ satisfy the spec, and a TypeScript copy of the rule is a second, weaker one.
 | `/record/[id]` | The month-end artifact. Screenshot or print it. |
 | `/insights` | Your own data, analysed and handed back (SPEC 07 §7.4). |
 | `/reclaim` | The health playbook's three rituals, and the rule recipes. |
-| `/settings` | Nudge times and timezone. No off switch — see SPEC 05 §5.3. |
+| `/settings` | Nudge times, timezone, and push. No off switch — see SPEC 05 §5.3. |
+| `/offline` | Shown when a navigation fails. Explains why it cannot show your habits. |
 
 In local mode, `/settings` also seeds the states that need an elapsed window
 (settlement, the recovery day, the double, the record) so the whole product can

@@ -63,6 +63,68 @@ self.addEventListener('fetch', (event) => {
   )
 })
 
+/*
+ * Q15 — the contentless push tickle.
+ *
+ * The push carries no payload. This handler fetches the cue from the app with
+ * the user's own session cookie, so the notification text is assembled here,
+ * on the user's device, from a request that ran inside the app's normal RLS
+ * boundary. The push service saw only that a message was delivered.
+ *
+ * A tickle that resolves to no cue — the evening check on a day already
+ * logged, say — shows nothing. That suppression cannot happen upstream,
+ * because the dispatcher is not permitted to know what was logged.
+ */
+self.addEventListener('push', (event) => {
+  event.waitUntil(
+    (async () => {
+      let cue = null
+      try {
+        const response = await fetch('/api/cue', {
+          credentials: 'include',
+          cache: 'no-store',
+        })
+        if (response.ok) cue = (await response.json()).cue
+      } catch {
+        // Offline, or the session has gone. Either way there is nothing
+        // honest to show, and a generic "open the app" notification would be
+        // noise the user did not ask for.
+      }
+
+      if (!cue) return
+
+      await self.registration.showNotification(cue.title, {
+        body: cue.body,
+        tag: cue.tag,
+        // Replace rather than stack: two cues for the same habit on the same
+        // day is the app nagging, which is the opposite of scaffolding.
+        renotify: false,
+        icon: '/icon.svg',
+        badge: '/icon.svg',
+        data: { url: cue.url },
+      })
+    })(),
+  )
+})
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const url = event.notification.data?.url ?? '/'
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      // Focus an open tab if there is one, rather than piling up windows.
+      for (const client of clients) {
+        if ('focus' in client) {
+          client.navigate(url)
+          return client.focus()
+        }
+      }
+      return self.clients.openWindow(url)
+    }),
+  )
+})
+
 // Lets a future release retire this worker without waiting for every tab to
 // close — `registration.unregister()` from the page is the escape hatch if the
 // offline behaviour ever needs pulling in a hurry.

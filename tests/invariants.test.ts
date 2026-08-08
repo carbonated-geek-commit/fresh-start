@@ -25,6 +25,7 @@ import { assertCleanupCopy, CopyViolationError, generateRecipes } from '@/cleanu
 import { parseEvent, EventValidationError } from '@/analytics/events'
 import { createInvite, completionNotification, PARTNER_ROLES } from '@/partners'
 import { MODES } from '@/engine/modes'
+import { cueDueWithin, isPushConfigured, publicVapidKey } from '@/nudges/push'
 import { acknowledgeRecovery, recoveryPrompt } from '@/engine/recovery'
 import { healthPlaybook } from '@/domains'
 
@@ -332,6 +333,70 @@ describe('N9 — behavioural data is never pushed outward', () => {
         },
       }),
     ).toThrow(EventValidationError)
+  })
+})
+
+describe('Q15 — the push tickle carries no behavioural data (N9)', () => {
+  it('sendTickle has no payload parameter', () => {
+    const source = readFileSync(join(SRC, 'nudges/push.ts'), 'utf8')
+    // The call passes `undefined` where web-push takes a payload, and the
+    // exported signature offers no way to supply one.
+    expect(source).toMatch(/sendNotification\([\s\S]{0,200}undefined,/)
+    expect(source).toMatch(/export async function sendTickle\(target: PushTarget\)/)
+  })
+
+  it('the service worker builds the notification from its own fetch, not the push', () => {
+    const sw = readFileSync(join(ROOT, 'public/sw.js'), 'utf8')
+    // It must not read text out of the push event — that would mean a payload
+    // had been sent.
+    expect(sw).not.toMatch(/event\.data\.(json|text)\(\)/)
+    expect(sw).toMatch(/fetch\('\/api\/cue'/)
+    expect(sw).toMatch(/credentials: 'include'/)
+  })
+
+  it('the dispatcher never reads habit or session data', () => {
+    const dispatch = readFileSync(join(SRC, 'app/api/nudges/dispatch/route.ts'), 'utf8')
+    for (const forbidden of ['listSessions', 'listCommitments', 'listHabits', 'listEvents']) {
+      expect(dispatch).not.toContain(forbidden)
+    }
+    expect(dispatch).toContain('listNudgeTargets')
+  })
+
+  it('the nudge-target type carries scheduling metadata only', () => {
+    const types = readFileSync(join(SRC, 'data/types.ts'), 'utf8')
+    const block = /export interface NudgeTarget \{([\s\S]*?)\n\}/.exec(types)
+    expect(block).not.toBeNull()
+    const body = (block as RegExpExecArray)[1] as string
+    for (const forbidden of ['habit', 'session', 'commitment', 'accrued', 'streak', 'label']) {
+      expect(body.toLowerCase()).not.toContain(forbidden)
+    }
+  })
+
+  it('push is off unless the deployment supplies VAPID keys', () => {
+    const before = { pub: process.env.VAPID_PUBLIC_KEY, priv: process.env.VAPID_PRIVATE_KEY }
+    delete process.env.VAPID_PUBLIC_KEY
+    delete process.env.VAPID_PRIVATE_KEY
+    expect(isPushConfigured()).toBe(false)
+    expect(publicVapidKey()).toBeNull()
+    if (before.pub) process.env.VAPID_PUBLIC_KEY = before.pub
+    if (before.priv) process.env.VAPID_PRIVATE_KEY = before.priv
+  })
+
+  it('cueDueWithin decides from the clock alone — it cannot see a session', () => {
+    const target = { time_zone: 'UTC', morning_cue: '07:00', evening_check: '20:00' }
+    expect(cueDueWithin(target, new Date('2026-02-01T07:05:00Z'), 15)).toBe('morning_cue')
+    expect(cueDueWithin(target, new Date('2026-02-01T20:10:00Z'), 15)).toBe('evening_check')
+    expect(cueDueWithin(target, new Date('2026-02-01T12:00:00Z'), 15)).toBeNull()
+    // Before the cue time, not after: a window that looked backwards would
+    // fire the morning cue at midnight.
+    expect(cueDueWithin(target, new Date('2026-02-01T06:55:00Z'), 15)).toBeNull()
+  })
+
+  it('respects the user timezone rather than the server clock', () => {
+    const tokyo = { time_zone: 'Asia/Tokyo', morning_cue: '07:00', evening_check: '20:00' }
+    // 22:05 UTC is 07:05 next day in Tokyo.
+    expect(cueDueWithin(tokyo, new Date('2026-02-01T22:05:00Z'), 15)).toBe('morning_cue')
+    expect(cueDueWithin(tokyo, new Date('2026-02-01T07:05:00Z'), 15)).toBeNull()
   })
 })
 

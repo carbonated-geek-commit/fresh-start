@@ -87,6 +87,33 @@ export interface BrokerRequestRecord {
   readonly notedAt: string
 }
 
+/** Q15. Contentless push — see `src/nudges/push.ts`. */
+export interface PushSubscriptionRecord {
+  readonly subscriptionId: string
+  readonly userId: string
+  readonly endpoint: string
+  readonly p256dh: string
+  readonly auth: string
+  readonly userAgent: string | null
+}
+
+/**
+ * What the dispatcher is allowed to see: scheduling metadata, and nothing
+ * else. Mirrors the `nudge_targets` view in db/policies/0002 — deliberately no
+ * habit, session, or commitment field, because the tickle is contentless and
+ * the dispatcher does not need to know what the cue says.
+ */
+export interface NudgeTarget {
+  readonly subscriptionId: string
+  readonly userId: string
+  readonly endpoint: string
+  readonly p256dh: string
+  readonly auth: string
+  readonly timeZone: string
+  readonly morningCue: string
+  readonly eveningCheck: string
+}
+
 export interface CreateHabitInput {
   readonly userId: string
   readonly label: string
@@ -147,6 +174,13 @@ export interface Store {
 
   listBrokerRequests(userId: string): Promise<BrokerRequestRecord[]>
   upsertBrokerRequest(record: BrokerRequestRecord): Promise<void>
+
+  listPushSubscriptions(userId: string): Promise<PushSubscriptionRecord[]>
+  upsertPushSubscription(record: Omit<PushSubscriptionRecord, 'subscriptionId'>): Promise<void>
+  removePushSubscription(userId: string, endpoint: string): Promise<void>
+  /** Dispatcher-scoped. Scheduling metadata only — never behavioural data. */
+  listNudgeTargets(): Promise<NudgeTarget[]>
+  markPushSubscriptionExpired(subscriptionId: string): Promise<void>
 
   recordEvent(event: AnalyticsEvent): Promise<void>
   listEvents(userId: string): Promise<AnalyticsEvent[]>

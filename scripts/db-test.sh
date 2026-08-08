@@ -50,7 +50,9 @@ for file in \
   "$ROOT/db/migrations/consent/0001_consent_ledger.sql" \
   "$ROOT/db/migrations/consent/0002_profiles.sql" \
   "$ROOT/db/migrations/stakes/0001_stake_ledger.sql" \
-  "$ROOT/db/policies/0001_rls.sql"
+  "$ROOT/db/migrations/consent/0003_push_subscriptions.sql" \
+  "$ROOT/db/policies/0001_rls.sql" \
+  "$ROOT/db/policies/0002_nudger.sql"
 do
   echo "    $(basename "$file")"
   run_sql "$file"

@@ -21,6 +21,8 @@ import type { Partner } from '@/partners'
 import type { SizeClass } from '@/goals/schema'
 import type {
   BrokerRequestRecord,
+  NudgeTarget,
+  PushSubscriptionRecord,
   CommitmentRecord,
   CreateCommitmentInput,
   CreateHabitInput,
@@ -404,6 +406,84 @@ export class SupabaseStore implements Store {
       { onConflict: 'user_id,broker_name' },
     )
     if (error) throw new Error(`upsertBrokerRequest: ${error.message}`)
+  }
+
+  /* ------------------------------------------------------------------- push */
+
+  async listPushSubscriptions(userId: string): Promise<PushSubscriptionRecord[]> {
+    const { data, error } = await this.client
+      .from('push_subscriptions')
+      .select('id, endpoint, p256dh, auth, user_agent')
+      .is('expired_at', null)
+    if (error) throw new Error(`listPushSubscriptions: ${error.message}`)
+    return (data ?? []).map((row) => ({
+      subscriptionId: row.id as string,
+      userId,
+      endpoint: row.endpoint as string,
+      p256dh: row.p256dh as string,
+      auth: row.auth as string,
+      userAgent: (row.user_agent as string | null) ?? null,
+    }))
+  }
+
+  async upsertPushSubscription(
+    record: Omit<PushSubscriptionRecord, 'subscriptionId'>,
+  ): Promise<void> {
+    const { error } = await this.client.from('push_subscriptions').upsert(
+      {
+        user_id: record.userId,
+        endpoint: record.endpoint,
+        p256dh: record.p256dh,
+        auth: record.auth,
+        user_agent: record.userAgent,
+        expired_at: null,
+        // The one egress grant a subscription carries. It permits waking this
+        // browser and nothing else — the tickle has no payload (Q15).
+        ...ledger(
+          'user_entered',
+          ['operate_habit'],
+          [{ target: 'push_endpoint', granted_at: new Date().toISOString(), revoked_at: null }],
+        ),
+      },
+      { onConflict: 'endpoint' },
+    )
+    if (error) throw new Error(`upsertPushSubscription: ${error.message}`)
+  }
+
+  async removePushSubscription(_userId: string, endpoint: string): Promise<void> {
+    const { error } = await this.client
+      .from('push_subscriptions')
+      .delete()
+      .eq('endpoint', endpoint)
+    if (error) throw new Error(`removePushSubscription: ${error.message}`)
+  }
+
+  /**
+   * Reads the `nudge_targets` view, which is all the dispatcher's role can
+   * see. Requires a client authenticated as `freshstart_nudger`; an ordinary
+   * user session gets nothing back, which is the intended behaviour.
+   */
+  async listNudgeTargets(): Promise<NudgeTarget[]> {
+    const { data, error } = await this.client.from('nudge_targets').select()
+    if (error) throw new Error(`listNudgeTargets: ${error.message}`)
+    return (data ?? []).map((row) => ({
+      subscriptionId: row.subscription_id as string,
+      userId: row.user_id as string,
+      endpoint: row.endpoint as string,
+      p256dh: row.p256dh as string,
+      auth: row.auth as string,
+      timeZone: row.time_zone as string,
+      morningCue: String(row.morning_cue).slice(0, 5),
+      eveningCheck: String(row.evening_check).slice(0, 5),
+    }))
+  }
+
+  async markPushSubscriptionExpired(subscriptionId: string): Promise<void> {
+    const { error } = await this.client
+      .from('push_subscriptions')
+      .update({ expired_at: new Date().toISOString() })
+      .eq('id', subscriptionId)
+    if (error) throw new Error(`markPushSubscriptionExpired: ${error.message}`)
   }
 
   /* ----------------------------------------------------------------- events */

@@ -31,3 +31,4 @@ The cue is what triggers the behavior. Do not make these opt-in.
 
 _Append-only. One line per claim, hand-off, and completion._
 - 2026-08-07 builder: complete. Pure scheduler; recovery replaces the morning cue rather than adding to it. Transport deferred per ADR-002 — nothing sends in v1.
+- 2026-08-08 builder: transport delivered (Q15). Contentless web push behind env-supplied VAPID keys; dispatcher role reads scheduling metadata only. Nudges now reach a closed app.

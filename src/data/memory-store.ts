@@ -20,6 +20,8 @@ import type { SessionLog, CommitmentStatus, SettlementDestination } from '@/engi
 import type { Partner } from '@/partners'
 import type {
   BrokerRequestRecord,
+  NudgeTarget,
+  PushSubscriptionRecord,
   CommitmentRecord,
   CreateCommitmentInput,
   CreateHabitInput,
@@ -39,6 +41,7 @@ interface State {
   partners: Partner[]
   recipes: RuleRecipeRecord[]
   brokerRequests: BrokerRequestRecord[]
+  pushSubscriptions: PushSubscriptionRecord[]
   events: AnalyticsEvent[]
 }
 
@@ -52,6 +55,7 @@ function emptyState(): State {
     partners: [],
     recipes: [],
     brokerRequests: [],
+    pushSubscriptions: [],
     events: [],
   }
 }
@@ -222,6 +226,53 @@ export class MemoryStore implements Store {
     )
     if (index >= 0) state.brokerRequests[index] = record
     else state.brokerRequests.push(record)
+  }
+
+  async listPushSubscriptions(userId: string): Promise<PushSubscriptionRecord[]> {
+    return state.pushSubscriptions.filter((s) => s.userId === userId)
+  }
+
+  async upsertPushSubscription(
+    record: Omit<PushSubscriptionRecord, 'subscriptionId'>,
+  ): Promise<void> {
+    const index = state.pushSubscriptions.findIndex((s) => s.endpoint === record.endpoint)
+    const next: PushSubscriptionRecord = {
+      ...record,
+      subscriptionId: index >= 0 ? (state.pushSubscriptions[index] as PushSubscriptionRecord).subscriptionId : randomUUID(),
+    }
+    if (index >= 0) state.pushSubscriptions[index] = next
+    else state.pushSubscriptions.push(next)
+  }
+
+  async removePushSubscription(userId: string, endpoint: string): Promise<void> {
+    state.pushSubscriptions = state.pushSubscriptions.filter(
+      (s) => !(s.userId === userId && s.endpoint === endpoint),
+    )
+  }
+
+  async listNudgeTargets(): Promise<NudgeTarget[]> {
+    const out: NudgeTarget[] = []
+    for (const sub of state.pushSubscriptions) {
+      const profile = state.profiles.get(sub.userId)
+      if (!profile) continue
+      out.push({
+        subscriptionId: sub.subscriptionId,
+        userId: sub.userId,
+        endpoint: sub.endpoint,
+        p256dh: sub.p256dh,
+        auth: sub.auth,
+        timeZone: profile.timeZone,
+        morningCue: profile.morningCue,
+        eveningCheck: profile.eveningCheck,
+      })
+    }
+    return out
+  }
+
+  async markPushSubscriptionExpired(subscriptionId: string): Promise<void> {
+    state.pushSubscriptions = state.pushSubscriptions.filter(
+      (s) => s.subscriptionId !== subscriptionId,
+    )
   }
 
   async recordEvent(event: AnalyticsEvent): Promise<void> {

@@ -205,6 +205,26 @@ export async function loadDashboard(store: Store, session: Session): Promise<Das
   }
 }
 
+/**
+ * The single cue to show right now, or null.
+ *
+ * Used by `/api/cue` after a contentless push tickle (Q15). Because it runs
+ * inside the user's own session it can see what the dispatcher cannot —
+ * whether today is already logged — which is where SPEC 05 section 5.3's
+ * "the evening check is suppressed if the session is already logged" is
+ * actually enforced.
+ */
+export async function leadNudgeFor(store: Store, session: Session): Promise<PlannedNudge | null> {
+  const dashboard = await loadDashboard(store, session)
+  const now = new Date()
+
+  const due = dashboard.nudges
+    .filter((nudge) => nudge.fireAt.getTime() <= now.getTime())
+    .sort((a, b) => b.fireAt.getTime() - a.fireAt.getTime())
+
+  return due[0] ?? null
+}
+
 /* ------------------------------------------------------------------------ */
 /* Creating a commitment — the N7 gate                                       */
 /* ------------------------------------------------------------------------ */

@@ -334,4 +334,75 @@ begin
 end;
 $$;
 
+-- ===========================================================================
+-- Q15 — the dispatcher role sees scheduling metadata and nothing else
+-- ===========================================================================
+set local role postgres;
+
+insert into public.push_subscriptions
+  (user_id, endpoint, p256dh, auth, consent_basis, egress_record)
+values
+  ('11111111-1111-1111-1111-111111111111',
+   'https://push.example.test/live', 'p256dh-live', 'auth-live',
+   row('push.v1', now(), 1)::consent.basis,
+   array[row('push_endpoint', now(), null)::consent.egress_grant]),
+  -- Revoked: the user turned notifications off. Must vanish from the view.
+  ('11111111-1111-1111-1111-111111111111',
+   'https://push.example.test/revoked', 'p256dh-rev', 'auth-rev',
+   row('push.v1', now(), 1)::consent.basis,
+   array[row('push_endpoint', now() - interval '1 day', now())::consent.egress_grant]);
+
+set local role freshstart_nudger;
+
+select assert(
+  (select count(*) from public.nudge_targets) = 1,
+  'Q15 — the dispatcher sees only the subscription with a live egress grant'
+);
+
+select assert(
+  (select endpoint from public.nudge_targets) = 'https://push.example.test/live',
+  'Q15 — a revoked push subscription is invisible to the dispatcher'
+);
+
+-- The view carries scheduling metadata only. A habit or session column here
+-- would put behavioural data in the dispatcher's hands (N9).
+select assert(
+  (select count(*) from information_schema.columns
+   where table_schema = 'public' and table_name = 'nudge_targets'
+     and column_name ~* '(habit|session|commitment|accrued|streak|label|note)') = 0,
+  'Q15 — nudge_targets exposes no habit, session, or commitment column'
+);
+
+do $$
+begin
+  begin
+    perform 1 from public.sessions;
+    raise exception 'FAIL: the nudger could read sessions';
+  exception
+    when insufficient_privilege then
+      raise notice 'ok  — Q15/N9: the dispatcher has no access to sessions';
+    when others then
+      if sqlstate = 'P0001' and sqlerrm like 'FAIL:%' then raise; end if;
+      raise notice 'ok  — Q15/N9: the dispatcher has no access to sessions (%)', sqlstate;
+  end;
+end;
+$$;
+
+do $$
+begin
+  begin
+    perform 1 from public.analytics_events;
+    raise exception 'FAIL: the nudger could read the event stream';
+  exception
+    when insufficient_privilege then
+      raise notice 'ok  — Q15/N9: the dispatcher has no access to the event stream';
+    when others then
+      if sqlstate = 'P0001' and sqlerrm like 'FAIL:%' then raise; end if;
+      raise notice 'ok  — Q15/N9: the dispatcher has no access to the event stream (%)', sqlstate;
+  end;
+end;
+$$;
+
+set local role postgres;
+
 rollback;

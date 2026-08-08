@@ -368,6 +368,37 @@ export async function generateRecipesFor(goalText: string) {
   return generateRecipes(goalText)
 }
 
+/* ------------------------------------------------------------------- push */
+
+/**
+ * Q15. Stores where to send a contentless tickle, and the client keys the push
+ * service cannot decrypt with. No habit, no schedule, no content.
+ */
+export async function savePushSubscription(subscription: {
+  endpoint: string
+  p256dh: string
+  auth: string
+}): Promise<void> {
+  const { session, store } = await context()
+  if (!subscription.endpoint || !subscription.p256dh || !subscription.auth) {
+    throw new Error('Incomplete push subscription.')
+  }
+  await store.upsertPushSubscription({
+    userId: session.userId,
+    endpoint: subscription.endpoint,
+    p256dh: subscription.p256dh,
+    auth: subscription.auth,
+    userAgent: null,
+  })
+  revalidatePath('/settings')
+}
+
+export async function removePushSubscription(endpoint: string): Promise<void> {
+  const { session, store } = await context()
+  await store.removePushSubscription(session.userId, endpoint)
+  revalidatePath('/settings')
+}
+
 /* ----------------------------------------------------- demo (local only) */
 
 /**

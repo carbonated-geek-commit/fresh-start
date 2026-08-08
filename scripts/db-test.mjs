@@ -28,7 +28,9 @@ const MIGRATIONS = [
   'db/migrations/consent/0001_consent_ledger.sql',
   'db/migrations/consent/0002_profiles.sql',
   'db/migrations/stakes/0001_stake_ledger.sql',
+  'db/migrations/consent/0003_push_subscriptions.sql',
   'db/policies/0001_rls.sql',
+  'db/policies/0002_nudger.sql',
 ]
 
 const dataDir = mkdtempSync(join(tmpdir(), 'freshstart-pg-'))

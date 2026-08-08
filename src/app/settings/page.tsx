@@ -3,8 +3,10 @@ import { getSession, isLocalMode } from '@/auth'
 import { resolveStore } from '@/data'
 import { loadDashboard } from '@/services/habit-service'
 import { Card, Notice, PageTitle } from '@/ui/components'
+import { publicVapidKey } from '@/nudges/push'
 import { DemoPanel } from './demo'
 import { SettingsForm } from './form'
+import { PushToggle } from './push-toggle'
 import { SignOutButton } from './sign-out'
 
 export const dynamic = 'force-dynamic'
@@ -23,6 +25,7 @@ export default async function SettingsPage() {
 
   const store = resolveStore(session.accessToken)
   const dashboard = await loadDashboard(store, session)
+  const pushKey = publicVapidKey()
 
   return (
     <>
@@ -34,6 +37,14 @@ export default async function SettingsPage() {
         morningCue={dashboard.profile.morningCue}
         eveningCheck={dashboard.profile.eveningCheck}
       />
+
+      {/* Q15. Shown only when the deployment actually has VAPID keys, so there
+          is never a button promising delivery the server cannot perform. */}
+      {pushKey ? (
+        <div className="mt-4">
+          <PushToggle publicKey={pushKey} />
+        </div>
+      ) : null}
 
       <div className="mt-4">
         <Notice title="Why there is no off switch">
