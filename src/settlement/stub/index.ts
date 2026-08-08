@@ -19,6 +19,17 @@
  * "The stub must be a clean seam: swapping in a real rail later must not
  * require changing the commitment or accrual model." The seam is
  * `SettlementRail`.
+ *
+ * **ADR-004 fixes the shape of the eventual real rail.** Settlement stays
+ * approval-gated permanently: nothing is deducted until the user approves that
+ * specific deduction. Default-yes settlement — charge unless declined — was
+ * considered and rejected.
+ *
+ * So a future Stripe implementation is a `SettlementRail` and nothing more. It
+ * must not introduce a scheduled resolver, a grace timer, or a default
+ * destination, because `userActionAt` below is what makes N5 true and it has
+ * no default in the type or in the schema. If a rail ever needs one, that is a
+ * thesis-level conversation, not an implementation detail.
  */
 
 import type { SettlementDestination } from '@/engine/streak/types'

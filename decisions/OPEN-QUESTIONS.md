@@ -21,10 +21,22 @@ recorded here and marked `ANSWERED` with a date. Spec amendments go to
 
 ## OPEN
 
-### Q11 — Pricing
-Subscription price point and tier structure. Not blocking the build.
+### Q11 — Pricing  **ANSWERED 2026-08-08**
+Subscription price point and tier structure.
 
-**Status:** OPEN
+**Answer:** **subscription after a 60-day trial.** The price point itself is
+deliberately left open and is expected to move; it is not a number any code
+depends on, and nothing in the build reads it.
+
+Consistent with the thesis ("Subscription only. The product never keeps any
+portion of a user's stake") and therefore with N1 — trial length and
+subscription price are company revenue, entirely separate from the stake.
+
+**Nothing is built for this.** A trial needs billing, billing needs a payment
+credential, and N2 forbids one in v1. Implementing it belongs to the payment
+phase alongside Q12.
+
+**Status:** ANSWERED — price point remains adjustable and is not blocking.
 
 ### Q12 — Settlement default at the currency phase
 v1 is points, so nothing charges. When currency ships, does settlement default
@@ -36,7 +48,31 @@ which is a different intervention from the binding contracts the design's
 reference effect sizes come from. SPEC 07 instrumentation is built to measure
 this before the decision is needed.
 
-**Status:** OPEN — not blocking v1.
+**Answer (2026-08-08):** **explicit approval at settlement. Nothing is ever
+deducted until the user approves that specific deduction.** Stripe is the
+intended processor when the currency phase ships. The stake amount stays
+user-chosen, as it already is.
+
+This resolves the blueprint section 2 open risk by keeping the promise-to-fund
+model rather than moving to a default-yes charge.
+
+**What this means for the build:** nothing changes. The settlement seam is
+already exactly this shape — `settle(commitment_id, destination)` resolving
+only on an explicit user action, with `user_action_at` NOT NULL and no default
+(N5). Swapping the stub for Stripe is a rail change behind that seam, not a
+model change. **No payment credential enters the repository until that phase**
+(N2), and Stripe is named here as a decision, not as an integration.
+
+**One thing to carry forward, stated once and not re-litigated.** Blueprint
+section 2 is explicit that the effect sizes this design leans on come from
+*binding* contracts where the card is charged automatically on failure. An
+approval-gated deduction is a different intervention and does not inherit those
+numbers. That is a deliberate, ethically-motivated trade — the user stays the
+arbiter — and it is exactly what SPEC 07 instrumentation exists to measure. The
+honest position is that the model is untested rather than weaker; month-2
+continuation at reduced stake (section 7.1) is the number that will say which.
+
+**Status:** ANSWERED.
 
 ### Q13 — Health playbook ritual content  **ANSWERED 2026-08-07**
 The concrete reclaim, rules, and starter-habit content for SPEC 08 section 8.4.
@@ -128,8 +164,15 @@ explicitly that reaching `streak_target` unlocks the double and nothing else.
 No code changed — the implementation always followed SPEC 01 section 1.4
 correctly.
 
-Deepening the floor remains available as a future thesis-level change; the two
-candidate shapes are recorded in section 2.5.
+**Economics affirmed 2026-08-08:** a two-day maximum run with breaks in between
+pays whatever the math produces. This is now an accepted product position, not
+an unresolved consequence — 20 of 30 days is real behaviour change, and the
+ramp rewarding volume alongside consecutiveness is acceptable. Reaching
+`streak_target` buys the double, and that is the whole of what it buys.
+
+No code changes. The two candidate ways to deepen the floor stay recorded in
+SPEC 02 section 2.5 in case the position is ever revisited, which would be a
+thesis-level conversation.
 
 **Status:** ANSWERED.
 
