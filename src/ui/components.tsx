@@ -216,6 +216,29 @@ export function ErrorText({ children }: { children: ReactNode }) {
   )
 }
 
+/**
+ * Confirmation after a server action.
+ *
+ * `aria-live="polite"` because these messages appear without a navigation —
+ * "Logged. +500 pts." and the recovery acknowledgement both land this way, and
+ * a screen-reader user who does not hear them has no idea the log worked.
+ *
+ * **The element renders even when empty, on purpose.** A live region that is
+ * mounted at the same moment its content arrives is frequently not announced;
+ * the region has to already exist for the change to be observed. So callers
+ * pass a possibly-null child rather than conditionally rendering this.
+ */
+export function StatusText({ children }: { children: ReactNode }) {
+  return (
+    <p
+      aria-live="polite"
+      className={`text-ink-soft text-xs leading-relaxed ${children ? 'mt-2' : ''}`}
+    >
+      {children}
+    </p>
+  )
+}
+
 export function EmptyState({ title, body, action }: { title: string; body: string; action?: ReactNode }) {
   return (
     <Card className="text-center">

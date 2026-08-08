@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useState } from 'react'
 import { updateSettingsAction, type ActionState } from '../actions'
-import { Button, Card, ErrorText, FieldLabel } from '@/ui/components'
+import { Button, Card, ErrorText, FieldLabel, StatusText } from '@/ui/components'
 
 /**
  * A short list of common zones plus whatever the browser reports.
@@ -117,9 +117,7 @@ export function SettingsForm({
         {pending ? 'Saving…' : 'Save'}
       </Button>
       {state.error ? <ErrorText>{state.error}</ErrorText> : null}
-      {state.message && !state.error ? (
-        <p className="text-ink-soft text-center text-xs">{state.message}</p>
-      ) : null}
+      <StatusText>{state.error ? null : state.message}</StatusText>
     </form>
   )
 }

@@ -3,7 +3,7 @@
 import { useActionState } from 'react'
 import { invitePartnerAction, removePartnerAction, type ActionState } from '../../actions'
 import { PARTNER_ROLES } from '@/partners'
-import { Button, Card, ErrorText, FieldLabel } from '@/ui/components'
+import { Button, Card, ErrorText, FieldLabel, StatusText } from '@/ui/components'
 
 export interface PartnerRow {
   email: string
@@ -111,9 +111,7 @@ export function PartnerPanel({
           {pending ? 'Inviting…' : 'Invite them'}
         </Button>
         {state.error ? <ErrorText>{state.error}</ErrorText> : null}
-        {state.message ? (
-          <p className="text-ink-soft text-xs leading-relaxed">{state.message}</p>
-        ) : null}
+        <StatusText>{state.message}</StatusText>
       </form>
     </Card>
   )

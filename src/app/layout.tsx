@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import Link from 'next/link'
 import { getSession, isLocalMode } from '@/auth'
+import { RegisterServiceWorker } from '@/ui/register-sw'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -41,7 +42,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </p>
         ) : null}
 
-        <main className="mx-auto w-full max-w-xl px-4 pt-5">{children}</main>
+        <a
+          href="#main"
+          className="bg-accent sr-only rounded-xl px-4 py-2 text-sm font-medium text-white focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-20"
+        >
+          Skip to content
+        </a>
+
+        <main id="main" className="mx-auto w-full max-w-xl px-4 pt-5">
+          {children}
+        </main>
 
         {session ? (
           <nav
@@ -66,6 +76,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </ul>
           </nav>
         ) : null}
+
+        <RegisterServiceWorker />
       </body>
     </html>
   )

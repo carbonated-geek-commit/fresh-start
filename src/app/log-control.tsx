@@ -2,7 +2,7 @@
 
 import { useActionState } from 'react'
 import { logSessionAction, type ActionState } from './actions'
-import { Button, ErrorText } from '@/ui/components'
+import { Button, ErrorText, StatusText } from '@/ui/components'
 
 /**
  * The log control.
@@ -25,9 +25,7 @@ export function LogControl({
 
   if (loggableDays.length === 0) {
     return (
-      <p className="text-ink-faint text-xs">
-        {state.message ?? 'Logged for today. Nothing else to do.'}
-      </p>
+      <StatusText>{state.message ?? 'Logged for today. Nothing else to do.'}</StatusText>
     )
   }
 
@@ -54,9 +52,7 @@ export function LogControl({
       </div>
 
       {state.error ? <ErrorText>{state.error}</ErrorText> : null}
-      {state.message && !state.error ? (
-        <p className="text-ink-soft text-xs leading-relaxed">{state.message}</p>
-      ) : null}
+      <StatusText>{state.error ? null : state.message}</StatusText>
     </form>
   )
 }

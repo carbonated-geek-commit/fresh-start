@@ -2,7 +2,7 @@
 
 import { useActionState } from 'react'
 import { seedDemoAction, type ActionState } from '../actions'
-import { Button, Card, ErrorText } from '@/ui/components'
+import { Button, Card, ErrorText, StatusText } from '@/ui/components'
 
 /**
  * Rendered only when the server says local mode is on, and the action refuses
@@ -27,9 +27,7 @@ export function DemoPanel() {
         </Button>
       </form>
       {state.error ? <ErrorText>{state.error}</ErrorText> : null}
-      {state.message && !state.error ? (
-        <p className="text-ink-soft mt-2 text-xs leading-relaxed">{state.message}</p>
-      ) : null}
+      <StatusText>{state.error ? null : state.message}</StatusText>
     </Card>
   )
 }

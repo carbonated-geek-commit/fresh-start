@@ -127,7 +127,15 @@ function HabitCard({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="display truncate text-xl">
-            <Link href={`/habit/${view.commitment.id}`}>{view.habit.label}</Link>
+            <Link href={`/habit/${view.commitment.id}`}>
+              {view.habit.label}
+              {/* A doubled commitment shares its habit's label. Left alone it
+                  renders an h2 identical to its source, which is unreadable in
+                  a heading list. */}
+              {view.commitment.doubledFromCommitmentId ? (
+                <span className="text-ink-faint"> · double</span>
+              ) : null}
+            </Link>
           </h2>
           <p className="text-ink-faint mt-0.5 text-xs">
             {view.commitment.mode === 'streak' ? 'Streak' : 'Consistency'} · day{' '}

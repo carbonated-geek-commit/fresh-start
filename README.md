@@ -51,6 +51,8 @@ the thing under test and it cannot be exercised from TypeScript:
 | `src/services/` | The one place the N5 and N7 gates are applied |
 | `src/data/` | `Store` interface + memory and Supabase implementations |
 | `src/app/` | Next.js App Router surface, mobile-first |
+| `src/app/record/` | The month-end artifact (ADR-003) — owner-only, print-friendly |
+| `public/sw.js` | Offline fallback only. Deliberately caches no app code — see the comment. |
 | `db/migrations/`, `db/policies/` | Consent ledger, stake ledger, RLS |
 | `db/tests/rls.test.sql` | Proves an application-layer bypass of RLS fails |
 
@@ -77,6 +79,23 @@ has the last word on `size_class`, and it may only ever demote toward
 **RLS is the consent ledger's enforcement.** The Supabase store performs no
 ownership checks on purpose; SPEC 06 §6.1 says application-layer checks do not
 satisfy the spec, and a TypeScript copy of the rule is a second, weaker one.
+
+## Surfaces
+
+| Route | What it is |
+|---|---|
+| `/` | Today. The cue that matters now, then a card per habit. |
+| `/new` | Goal in, sized behaviours out. Outcomes are shown but cannot be staked. |
+| `/habit/[id]` | The ladder, the window, logging, partners, the double. |
+| `/settle/[id]` | The settlement decision. No timer, no countdown, no default. |
+| `/record/[id]` | The month-end artifact. Screenshot or print it. |
+| `/insights` | Your own data, analysed and handed back (SPEC 07 §7.4). |
+| `/reclaim` | The health playbook's three rituals, and the rule recipes. |
+| `/settings` | Nudge times and timezone. No off switch — see SPEC 05 §5.3. |
+
+In local mode, `/settings` also seeds the states that need an elapsed window
+(settlement, the recovery day, the double, the record) so the whole product can
+be walked in a couple of minutes rather than a month.
 
 ## Non-negotiables
 
