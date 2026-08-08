@@ -67,8 +67,19 @@ def main():
             "Work inside the repository." % rel
         )
 
+    rel_clean = rel.rstrip("/")
     for pattern in PROTECTED:
-        if rel == pattern or fnmatch(rel, pattern):
+        matched = rel_clean == pattern or fnmatch(rel_clean, pattern)
+        if not matched:
+            # A target that is an ANCESTOR of a protected path is just as
+            # destructive as the path itself: `.claude/hooks` matches neither
+            # `.claude/hooks/*` nor `.claude/hooks/**` by glob. Kept in sync
+            # with the same rule in bash-guard.py.
+            prefix = pattern.split("*", 1)[0].rstrip("/")
+            matched = bool(prefix) and (
+                rel_clean == prefix or prefix.startswith(rel_clean + "/")
+            )
+        if matched:
             block(
                 "%s is protected by CLAUDE.md section 2 and cannot be edited by "
                 "an agent.\n\n"
