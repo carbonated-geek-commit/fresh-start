@@ -29,6 +29,16 @@ npm run verify
 That is `tsc --noEmit` plus the Vitest suite: golden fixtures, ramp properties
 P1–P8, the streak state machine, and one describe block per invariant.
 
+To try the push nudges locally, generate a throwaway key pair — the toggle in
+`/settings` appears only when the server has one:
+
+```bash
+node -e "const w=require('web-push'),k=w.generateVAPIDKeys();require('fs').writeFileSync('.env.local',`VAPID_PUBLIC_KEY=${k.publicKey}
+VAPID_PRIVATE_KEY=${k.privateKey}
+VAPID_SUBJECT=mailto:you@example.com
+`)"
+```
+
 `npm run verify` includes the data-spine suite, which runs against a **real
 PostgreSQL** — RLS is the thing under test, and it cannot be exercised from
 TypeScript. It needs no Docker and no setup: `embedded-postgres` supplies a
