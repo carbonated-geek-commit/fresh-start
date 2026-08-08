@@ -1,0 +1,19 @@
+node_modules/
+dist/
+build/
+.env
+.env.*
+*.log
+__pycache__/
+*.pyc
+.DS_Store
+.venv/
+
+# Checkpoints are local crash-recovery artifacts, not source.
+# Tracking them makes the commit gate dirty the tree it just cleared.
+decisions/checkpoints/*.md
+!decisions/checkpoints/.gitkeep
+.next/
+next-env.d.ts
+*.tsbuildinfo
+.vercel
