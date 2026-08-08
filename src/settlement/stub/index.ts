@@ -153,21 +153,24 @@ export interface DestinationOption {
  * revenue must never depend on a user failing; the enum is where that is true.
  */
 export function destinationOptions(shortfallMinor: number): DestinationOption[] {
+  const fellShort = shortfallMinor > 0
   return [
     {
       id: 'user',
       label: 'Back to me',
-      description:
-        shortfallMinor > 0
-          ? 'Keep the shortfall. This is always available, and choosing it is not a failure.'
-          : 'Everything you earned returns to you.',
+      description: fellShort
+        ? 'Keep the shortfall. This is always available, and choosing it is not a failure.'
+        : 'Everything you earned returns to you.',
     },
     {
       id: 'charity',
       label: 'To a cause',
-      description:
-        'Send the shortfall somewhere you would rather it went. In this version nothing moves — ' +
-        'we record the choice.',
+      // With nothing left over there is no shortfall to route, so offering to
+      // "send the shortfall" would describe a transaction that cannot happen.
+      description: fellShort
+        ? 'Send the shortfall somewhere you would rather it went. In this version nothing moves — ' +
+          'we record the choice.'
+        : 'Pass it on instead of keeping it. In this version nothing moves — we record the choice.',
     },
   ]
 }

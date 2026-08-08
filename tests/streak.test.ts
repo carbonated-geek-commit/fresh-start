@@ -156,6 +156,54 @@ describe('SPEC 02 §2.5 — the structural floor', () => {
   })
 })
 
+describe('SPEC 02 §2.5 — the floor does not hold beyond the alternating case', () => {
+  /**
+   * §2.5 claims: "Because a broken chain resets position to 0 in streak mode,
+   * an inconsistent pattern cannot reach the target within the window. This is
+   * the entire enforcement mechanism."
+   *
+   * That claim is false for every pattern looser than true alternating. These
+   * tests pin the *actual* behaviour, which follows SPEC 01 §1.4 exactly
+   * (`accrued = min(sum(session_values), target)`) — the implementation is
+   * right and the §2.5 claim is wrong. See Q16 in decisions/OPEN-QUESTIONS.md.
+   */
+  function kOnOneOff(k: number, windowDays: number): DayKey[] {
+    const days: DayKey[] = []
+    for (let i = 0, run = 0; i < windowDays; i++) {
+      if (run < k) days.push(addDays(START, i))
+      run = run === k ? 0 : run + 1
+    }
+    return days
+  }
+
+  function accrue(completedDays: readonly DayKey[]): number {
+    const c = config()
+    return replayWindow({
+      ramp,
+      config: c,
+      windowStart: START,
+      logs: logsFor(completedDays),
+      today: addDays(START, 29),
+    }).state.accruedMinor
+  }
+
+  it('true alternating falls short, exactly as §2.5 states', () => {
+    expect(accrue(kOnOneOff(1, 30))).toBe(7_500)
+  })
+
+  it('but 2-on-1-off reaches the FULL target with a maximum run of two days', () => {
+    // 20 completed days at 500 + 561 per pair = 10,610, capped at 10,000 —
+    // the same payout as a clean twelve-day run.
+    expect(accrue(kOnOneOff(2, 30))).toBe(10_000)
+  })
+
+  it('every pattern looser than alternating reaches the target', () => {
+    for (const k of [2, 3, 4, 5, 6, 7]) {
+      expect(accrue(kOnOneOff(k, 30))).toBe(10_000)
+    }
+  })
+})
+
 describe('SPEC 01 §1.4 — accrual', () => {
   it('is capped at the target, and later sessions add zero but are recorded', () => {
     const c = config({ mode: 'consistency', windowDays: 30 })

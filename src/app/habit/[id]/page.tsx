@@ -158,6 +158,15 @@ export default async function HabitPage({ params }: { params: Promise<{ id: stri
         </div>
       ) : null}
 
+      {/* ADR-003 — the month-end artifact, once there is a window to record. */}
+      {view.replay.windowElapsed || view.settlement ? (
+        <div className="mt-4">
+          <LinkButton href={`/record/${view.commitment.id}`} variant="quiet">
+            See your record
+          </LinkButton>
+        </div>
+      ) : null}
+
       <div className="mt-8 space-y-3">
         <AbandonControl commitmentId={view.commitment.id} />
         <p className="text-ink-faint text-center text-xs">

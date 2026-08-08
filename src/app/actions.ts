@@ -17,6 +17,8 @@ import type { DayKey } from '@/engine/calendar'
 import { runTranslator, resolveTranslatorProvider, StakeRejectedError, TranslatorError } from '@/goals'
 import { generateRecipes } from '@/cleanup'
 import { createInvite, PartnerInviteError } from '@/partners'
+import { normalizeSchedule } from '@/nudges'
+import { seedDemoData } from '@/services/dev-seed'
 import { emit } from '@/analytics/events'
 import { storeEventSink } from '@/services/event-sink'
 import {
@@ -54,6 +56,54 @@ export async function signInLocal(_prev: ActionState, formData: FormData): Promi
 export async function signOut(): Promise<void> {
   await endLocalSession()
   redirect('/start')
+}
+
+/**
+ * SPEC 05 section 5.3 — nudge times are user-configurable.
+ *
+ * There is no parameter here that disables the nudges: the spec calls them
+ * core scaffolding rather than a preference, so the only thing this action can
+ * change is *when*.
+ */
+export async function updateSettingsAction(
+  _prev: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const { session, store } = await context()
+
+  const displayName = String(formData.get('displayName') ?? '').trim()
+  if (displayName.length === 0) return { error: 'Tell us what to call you.' }
+
+  const requestedZone = String(formData.get('timeZone') ?? 'UTC')
+  if (!isKnownTimeZone(requestedZone)) return { error: 'That timezone is not one we recognise.' }
+
+  const schedule = normalizeSchedule({
+    morningCue: String(formData.get('morningCue') ?? ''),
+    eveningCheck: String(formData.get('eveningCheck') ?? ''),
+    timeZone: requestedZone,
+  })
+
+  await store.upsertProfile({
+    userId: session.userId,
+    displayName: displayName.slice(0, 80),
+    timeZone: schedule.timeZone,
+    morningCue: schedule.morningCue,
+    eveningCheck: schedule.eveningCheck,
+  })
+
+  revalidatePath('/settings')
+  revalidatePath('/')
+  return { ok: true, message: 'Saved.' }
+}
+
+/** Validated against the runtime's own zone database rather than a list. */
+function isKnownTimeZone(zone: string): boolean {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: zone })
+    return true
+  } catch {
+    return false
+  }
 }
 
 /* ------------------------------------------------------------- translator */
@@ -316,4 +366,35 @@ export async function noteRecipeApplied(
 
 export async function generateRecipesFor(goalText: string) {
   return generateRecipes(goalText)
+}
+
+/* ----------------------------------------------------- demo (local only) */
+
+/**
+ * Seeds the states that need an elapsed window — settlement, the recovery day,
+ * the double, the month-end record.
+ *
+ * Guarded twice: `isLocalMode()` here, and again inside `seedDemoData`. With
+ * Supabase configured neither runs.
+ */
+export async function seedDemoAction(
+  _prev: ActionState,
+  _formData: FormData,
+): Promise<ActionState> {
+  if (!isLocalMode()) return { error: 'Demo data is only available in local mode.' }
+  const { session, store, sink } = await context()
+  try {
+    const created = await seedDemoData(store, sink, session)
+    revalidatePath('/')
+    revalidatePath('/insights')
+    return {
+      ok: true,
+      message:
+        created === 0
+          ? 'No room — you are already holding five habits.'
+          : `Added ${created}. One window has finished, one is a recovery day, one hit the streak.`,
+    }
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : 'Could not seed.' }
+  }
 }

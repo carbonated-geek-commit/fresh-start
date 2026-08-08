@@ -26,6 +26,7 @@ const NAV = [
   { href: '/', label: 'Today', icon: '◎' },
   { href: '/reclaim', label: 'Reclaim', icon: '⌫' },
   { href: '/insights', label: 'You', icon: '◔' },
+  { href: '/settings', label: 'Settings', icon: '⚙' },
 ]
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

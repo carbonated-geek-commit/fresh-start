@@ -6,6 +6,7 @@ import { formatMinor } from '@/engine/ramp'
 import { recoveryPrompt } from '@/engine/recovery'
 import { loadDashboard, type CommitmentView } from '@/services/habit-service'
 import { Card, EmptyState, LinkButton, LoadMeter, Notice, PageTitle, ValueBar, WindowStrip } from '@/ui/components'
+import { CueStrip, leadNudge } from '@/ui/cue-strip'
 import { LogControl } from './log-control'
 
 export const dynamic = 'force-dynamic'
@@ -20,11 +21,21 @@ export default async function TodayPage() {
   const active = dashboard.commitments.filter((c) => c.commitment.status === 'active')
   const awaiting = dashboard.commitments.filter((c) => c.awaitingSettlement)
 
+  // The strip already leads with one cue. Whichever commitment it names does
+  // not repeat its recovery prompt on its own card two inches below.
+  const now = new Date()
+  const lead = leadNudge(dashboard.nudges, now)
+  const cueShownFor = lead?.kind === 'recovery' ? lead.commitmentId : null
+
   return (
     <>
       <PageTitle kicker={dashboard.today}>
         {greeting(dashboard.profile.displayName, active)}
       </PageTitle>
+
+      {active.length > 0 ? (
+        <CueStrip nudges={dashboard.nudges} now={now} timeZone={dashboard.profile.timeZone} />
+      ) : null}
 
       {awaiting.length > 0 ? (
         <div className="mb-4 space-y-3">
@@ -50,7 +61,12 @@ export default async function TodayPage() {
       ) : (
         <div className="space-y-4">
           {active.map((view) => (
-            <HabitCard key={view.commitment.id} view={view} today={dashboard.today} />
+            <HabitCard
+              key={view.commitment.id}
+              view={view}
+              today={dashboard.today}
+              suppressRecoveryNotice={view.commitment.id === cueShownFor}
+            />
           ))}
         </div>
       )}
@@ -94,8 +110,17 @@ function greeting(name: string, active: readonly CommitmentView[]): string {
   return `${pending} to go, ${name}.`
 }
 
-function HabitCard({ view, today }: { view: CommitmentView; today: string }) {
-  const prompt = view.isRecoveryDay ? recoveryPrompt(view.daysSinceMiss ?? 1) : null
+function HabitCard({
+  view,
+  today,
+  suppressRecoveryNotice = false,
+}: {
+  view: CommitmentView
+  today: string
+  suppressRecoveryNotice?: boolean
+}) {
+  const prompt =
+    view.isRecoveryDay && !suppressRecoveryNotice ? recoveryPrompt(view.daysSinceMiss ?? 1) : null
 
   return (
     <Card as="article">

@@ -42,3 +42,66 @@ this before the decision is needed.
 The concrete reclaim, rules, and starter-habit content for SPEC 08 section 8.4.
 
 **Status:** OPEN — blocks T14 only.
+
+### Q14 — Should the month-end artifact ever be link-shareable?
+Blueprint v0.4 section 4.5 calls the artifact "the natural referral surface".
+Built as an owner-only page (ADR-003) because a public URL carrying a
+completion record is an outbound path for behavioural data, which N9 forbids.
+
+Making it link-shareable is possible — a signed, expiring, opt-in link with a
+reduced payload would be the shape — but it is an N9 amendment and therefore a
+thesis-level conversation, not a feature decision.
+
+**Status:** OPEN — not blocking. The artifact ships owner-only.
+
+### Q15 — What transport delivers the two daily nudges?
+SPEC 05 section 5.3 requires two nudges per commitment per day and calls them
+core scaffolding rather than a preference. The scheduler is built and tested as
+a pure function; nothing sends. v1 surfaces them in-app only (ADR-002).
+
+Web push needs a VAPID key pair, which is a credential and therefore a human
+decision under CLAUDE.md section 4. Email would need a sending domain.
+
+**Status:** OPEN — the app works without it, but the nudges are not doing their
+job until something delivers them off-surface.
+
+### Q16 — The structural floor is much shallower than SPEC 02 section 2.5 claims
+Section 2.5 says "an inconsistent pattern cannot reach the target within the
+window" and calls that "the entire enforcement mechanism". Measured at the
+default profile, only *true alternating* falls short (7,500). A **2-on-1-off**
+pattern — longest run of two days — reaches the full 10,000, the same as a
+clean twelve-day run.
+
+The implementation is correct: SPEC 01 section 1.4 defines accrual as
+`min(sum(session_values), target)` and that is exactly what it does. Section
+2.5's claim about the consequence is what is wrong.
+
+Consequence: within a 30-day window the ramp rewards volume more than
+consecutiveness, and reaching `streak_target` buys only the optional double,
+not the value. That may be fine — 20 of 30 days is real change — but it should
+be chosen rather than assumed.
+
+Correction filed at `specs-draft/02-ramp-payout-section-2.5-correction.md`.
+Pinned by tests in `tests/streak.test.ts`.
+
+**Status:** OPEN — not blocking, and no code change is warranted without a
+decision. Deepening the floor is an economics change (thesis-level).
+
+### Q17 — The SQL data-spine suite has still never been executed
+`db/tests/rls.test.sql` proves the T01 and T03 criteria that TypeScript cannot
+reach: that an application-layer bypass of RLS returns nothing, that the
+outbound role reads only rows with a live egress grant, that a company
+destination is rejected, and that `window_days` is immutable.
+
+Docker Desktop is installed on the build machine but its daemon would not come
+up (`docker info` hangs; no containers ever became reachable), so the suite has
+been written and reviewed but never run. This is an environment blocker, not a
+code one.
+
+Run it with `./scripts/db-test.sh` once Docker is healthy, or point `psql` at
+any Postgres 16 and apply `db/migrations/**` then `db/policies/**` then the
+test file.
+
+**Status:** OPEN — the only acceptance criteria in the whole build that are
+claimed but unverified. Treat every RLS assertion as unproven until this runs.
+
