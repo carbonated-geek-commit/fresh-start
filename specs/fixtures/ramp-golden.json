@@ -1,0 +1,46 @@
+{
+  "_note": "Authoritative expected output for SPEC 02. Tests compare exactly. If an implementation disagrees, the implementation is wrong.",
+  "algorithm": "SPEC 02 section 2.2",
+  "profiles": {
+    "default": {
+      "target_minor": 10000,
+      "streak_target": 12,
+      "base_ratio": 0.05,
+      "base_minor": 500,
+      "day_values_minor": [
+        500,
+        561,
+        621,
+        682,
+        742,
+        803,
+        864,
+        924,
+        985,
+        1045,
+        1106,
+        1167
+      ]
+    },
+    "doubled": {
+      "target_minor": 20000,
+      "streak_target": 12,
+      "base_ratio": 0.05,
+      "base_minor": 1000,
+      "day_values_minor": [
+        1000,
+        1121,
+        1242,
+        1364,
+        1485,
+        1606,
+        1727,
+        1848,
+        1970,
+        2091,
+        2212,
+        2334
+      ]
+    }
+  }
+}
